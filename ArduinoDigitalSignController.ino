@@ -3,13 +3,11 @@
 #include "SignController.h"
 #include "SignOptions.h"
 
-//SoftwareSerial mySerial(2,3);
 
+const int inputBufferSize = 200;
 
+char inputBuffer[inputBufferSize];
 int counter = 0;
-
-const int messageSize = 200;
-char message[messageSize];
 
 SignController signController = SignController(2, 3, true);
 SignOptions options = SignOptions();
@@ -17,12 +15,12 @@ SignOptions options = SignOptions();
 void setup() {
   Serial.begin(57600);
 
-  clearMessage();
+  clearBuffer();
 
   options.scrollMode = ScrollModes::MOVE_TO_LEFT_LOOP;
   options.scrollRate = 0x58;
   options.scrollFreeze = 0;
-  
+
   signController.sendMessage("", &options);
 
 }
@@ -31,33 +29,53 @@ void setup() {
 void loop() {
 
   byte b;
-  
+
   if (Serial.available() > 0) {
     b = Serial.read();
-    
+
     Serial.println(counter);
-    if (b == ';') {
-      message[counter] = ' ';
-      signController.sendMessage(message, &options);
+    if (b == '`') {
+      inputBuffer[counter] = ' '; //terminator
+      processBuffer();
+      clearBuffer();
       counter = 0;
-      
-      Serial.println(message);
-      
-      clearMessage();
-      
-    } else {
-      message[counter++] = b;
+    } 
+    else {
+      inputBuffer[counter++] = b;
     }
   }
+}
+
+
+void processBuffer() {
+  String command = String(inputBuffer).substring(0, 4);
+  String message = String(inputBuffer).substring(5);
+
+  if (command == "MSG ")     //set message
+    return signController.sendMessage(inputBuffer, &options);
+  if (command == "MOSM")     //message option scroll mode
+    return (void)(options.scrollMode = message[0]);
+  if (command == "MOSR")     //message option scroll rate
+    return (void)(options.scrollRate = 0x58);  //TODO: convert from char[] (hex) to number
   
+  Serial.println("Error: Unknown command.");
+
+
 }
 
 
-void clearMessage() {
-  for (int i = 0; i < messageSize; i++)
-     message[i] = 0x00;
+void clearBuffer() {
+  for (int i = 0; i < inputBufferSize; i++)
+    inputBuffer[i] = 0x00;
 }
 
 
+
+/*
+
+ MSG messagetext
+ 
+ 
+ */
 
 
