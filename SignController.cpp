@@ -3,26 +3,28 @@
 #include <SoftwareSerial.h>
 
 
-byte prefix[] = {0xa0};
+int MAX_MESSAGE_SIZE = 201; //actually 200
+
+byte prefix[] = {0xa0, 0x00, 0x00, 0x01}; //init, size byte 1, size byte 2, something
 
 byte terminator[] = {0x00, 0x50};
 
 byte messageCommand[] = {
-  0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x02, 0x01, 0x00, 
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x03, 0x03, 0x02, 0x01, 0x00, 
   0x01, //scroll mode (0 random, 1 static, 2 scroll to left, 3 scroll to right
   0x00, //border mode (0 none)
   0x3e, //first digit: rate level; second digit: rate (0 slowest f fastest)
   0x03, //freeze (sec)
   0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
 
-int msgScrollModePos = 16;
-int msgBorderModePos = 17;
-int msgScrollRatePos = 18;
-int msgScrollFreezePos = 19;
+int msgScrollModePos = 14;
+int msgBorderModePos = 15;
+int msgScrollRatePos = 16;
+int msgScrollFreezePos = 17;
                                                                                                              
 
 byte finalizeCommand[] = {
-  0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x19, 0x18, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x19, 0x18, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 
 SignController::SignController(int pinRX, int pinTX) : softSerial(pinRX, pinTX) {
@@ -43,6 +45,16 @@ void SignController::sendMessage(String message) {
 
 void SignController::sendMessage(String message, SignOptions *signOptions) {
 
+  if (message.length() > MAX_MESSAGE_SIZE) {
+    if (_debugMode) {
+      Serial.print("Message too big!  Received ");
+      Serial.print(message.length());
+      Serial.print(" bytes.  Max is ");
+      Serial.println(MAX_MESSAGE_SIZE);
+    }
+    return;
+  }
+  
   softSerial.begin(57600);
   
   int messageCommandLength = getMessageCommandLength(message);
@@ -96,36 +108,45 @@ int SignController::getMessageCommandLength(String message) {
 
 
 void SignController::buildAndWriteCommand(byte command[], int commandLength) {
-  byte builtCommand[commandLength + 6];
+  int builtCommandLength = getBuiltCommandLength(commandLength);
+  byte builtCommand[builtCommandLength];
   buildCommand(command, commandLength, builtCommand);
-  writeToSerial(builtCommand, commandLength + 6);
+  writeToSerial(builtCommand, builtCommandLength);
 }
 
 
 
 void SignController::buildCommand(byte command[], int commandLength, byte builtCommand[]) {
   //add prefix, checksum and terminator to command and return in builtCommand. 
-  //builtCommand must be initialized to be 6 bytes longer than command before calling this.
+  //builtCommand must be initialized to be getBuiltCommandLength(commandLength) in size.
   
   //build command
-  //prepend initializer and length (commandLength + 6)
-  byte commandPrefix[2];
+  //prepend initializer and length (commandLength + 8)
+  byte commandPrefix[4];
   
-  commandPrefix[0] = prefix[0];
-  commandPrefix[1] = commandLength + 6;
+  arrayUtils.copyArray(prefix, 4, commandPrefix);
   
-  arrayUtils.concatArrays(commandPrefix, 2, command, commandLength, builtCommand);
+  commandPrefix[2] = ((commandLength + 8) >> 8) & 0xff;
+  commandPrefix[1] = (commandLength + 8) & 0xff;
+
+  
+  arrayUtils.concatArrays(commandPrefix, 4, command, commandLength, builtCommand);
   
   //append checksum
   byte checksum[2];
   byte revChecksum[2];
-  computeChecksum(builtCommand, commandLength + 2, checksum);
+  computeChecksum(builtCommand, commandLength + 4, checksum);
   arrayUtils.reverseArray2(checksum, revChecksum);
   
-  arrayUtils.concatArrays(builtCommand, commandLength + 2, revChecksum, 2, builtCommand);
-  arrayUtils.concatArrays(builtCommand, commandLength + 4, terminator, 2, builtCommand);
+  arrayUtils.concatArrays(builtCommand, commandLength + 4, revChecksum, 2, builtCommand);
+  arrayUtils.concatArrays(builtCommand, commandLength + 6, terminator, 2, builtCommand);
 
 } 
+
+int SignController::getBuiltCommandLength(int commandLength) {
+  return commandLength + 8;
+}
+
 
 void SignController::computeChecksum(byte command[], int commandLength, byte b[2]) {
   

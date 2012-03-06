@@ -24,6 +24,8 @@ class SignController {
     
     void buildAndWriteCommand(byte command[], int commandLength);
     void buildCommand(byte command[], int commandLength, byte builtCommand[]);
+    int getBuiltCommandLength(int commandLength);
+    
     void computeChecksum(byte command[], int commandLength, byte b[2]);
     
     

@@ -7,33 +7,55 @@
 
 
 int counter = 0;
-SignController signController = SignController(2, 3);
+
+const int messageSize = 200;
+char message[messageSize];
+
+SignController signController = SignController(2, 3, true);
 SignOptions options = SignOptions();
 
 void setup() {
   Serial.begin(57600);
-  
-  
-  options.scrollMode = ScrollModes::STATIC;
-  options.scrollRate = 0x48;
+
+  clearMessage();
+
+  options.scrollMode = ScrollModes::MOVE_TO_LEFT_LOOP;
+  options.scrollRate = 0x58;
   options.scrollFreeze = 0;
   
-  //signController.sendMessage("Your mom", &options);
+  signController.sendMessage("", &options);
 
 }
 
 
-
-
 void loop() {
+
+  byte b;
   
-  signController.sendMessage(String(counter++));
+  if (Serial.available() > 0) {
+    b = Serial.read();
+    
+    Serial.println(counter);
+    if (b == ';') {
+      message[counter] = ' ';
+      signController.sendMessage(message, &options);
+      counter = 0;
+      
+      Serial.println(message);
+      
+      clearMessage();
+      
+    } else {
+      message[counter++] = b;
+    }
+  }
   
-  //signController.sendMessage(String(random(100000000)));
-  
-  //delay(1000);
-  
-  
+}
+
+
+void clearMessage() {
+  for (int i = 0; i < messageSize; i++)
+     message[i] = 0x00;
 }
 
 
