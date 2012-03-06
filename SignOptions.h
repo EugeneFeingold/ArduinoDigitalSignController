@@ -7,15 +7,23 @@
 
 class SignOptions {
 public:
-  int scrollMode;
-  int borderMode;
-  int scrollRate;
-  int scrollFreeze;
-
   SignOptions();
+  
+  void setScrollMode(int scrollMode);
+  void setScrollRate(int scrollRate);
+  void setScrollFreeze(int scrollFreeze);
+  void setBorderMode(int borderMode);  
+  
+  int getScrollMode();
+  int getScrollRate();
+  int getScrollFreeze();
+  int getBorderMode();
 
-
-
+private:
+  int _scrollMode;
+  int _scrollRate;  //lower = faster
+  int _scrollFreeze;
+  int _borderMode;
 
 };
 

@@ -5,7 +5,12 @@
 
 int MAX_MESSAGE_SIZE = 201; //actually 200
 
-byte prefix[] = {0xa0, 0x00, 0x00, 0x01}; //init, size byte 1, size byte 2, something
+/*
+command structure:  prefix - command - checksum - terminator
+*/
+
+
+byte prefix[] = {0xa0, 0x00, 0x00, 0x01}; //init, size byte 1, size byte 2, something?
 
 byte terminator[] = {0x00, 0x50};
 
@@ -78,10 +83,10 @@ void SignController::buildMessageCommand(String message, SignOptions *signOption
   debugOutput("messageCommand", messageCommand, messageCommandLength);
   arrayUtils.copyArray(messageCommand, messageCommandLength, command);
   
-  command[msgScrollModePos] = signOptions->scrollMode;
-  command[msgBorderModePos] = signOptions->borderMode;
-  command[msgScrollRatePos] = signOptions->scrollRate;
-  command[msgScrollFreezePos] = signOptions->scrollFreeze;  
+  command[msgScrollModePos] = signOptions->getScrollMode();
+  command[msgScrollRatePos] = signOptions->getScrollRate();
+  command[msgScrollFreezePos] = signOptions->getScrollFreeze();  
+  command[msgBorderModePos] = signOptions->getBorderMode();
   
   byte messageBytes[messageLength];
   (message).getBytes(messageBytes, messageLength);
