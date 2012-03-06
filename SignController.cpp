@@ -1,6 +1,5 @@
 
 #include "SignController.h"
-#include <SoftwareSerial.h>
 
 
 int MAX_MESSAGE_SIZE = 201; //actually 200
@@ -153,7 +152,7 @@ int SignController::getBuiltCommandLength(int commandLength) {
 }
 
 
-void SignController::computeChecksum(byte command[], int commandLength, byte b[2]) {
+void SignController::computeChecksum(byte command[], int commandLength, byte checksum[2]) {
   
   unsigned int sum = 0;
   for (int i = 0; i < commandLength; i++) {

@@ -1,8 +1,7 @@
 #ifndef SignController_H
 #define SignController_H
 
-
-#include "Arduino.h"
+#include <Arduino.h>
 #include <SoftwareSerial.h>
 
 #include "ArrayUtils.h"
@@ -26,7 +25,7 @@ class SignController {
     void buildCommand(byte command[], int commandLength, byte builtCommand[]);
     int getBuiltCommandLength(int commandLength);
     
-    void computeChecksum(byte command[], int commandLength, byte b[2]);
+    void computeChecksum(byte command[], int commandLength, byte checksum[2]);
     
     
     

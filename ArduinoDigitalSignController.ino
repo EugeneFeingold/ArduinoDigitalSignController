@@ -1,5 +1,5 @@
-#include <SoftwareSerial.h>
 
+#include <SoftwareSerial.h>
 #include "SignController.h"
 #include "SignOptions.h"
 
@@ -33,7 +33,7 @@ void loop() {
     Serial.println(counter);
     if (b == '`') {
       inputBuffer[counter] = ' '; //terminator
-      processBuffer();
+      processBuffer(counter);
       clearBuffer();
       counter = 0;
     } 
@@ -45,25 +45,31 @@ void loop() {
 
 
 
-void processBuffer() {
+void processBuffer(int len) {
   String command = String(inputBuffer).substring(0, 4);
-  String message = String(inputBuffer).substring(5);
-
+  String message = String(inputBuffer).substring(5, len - 5);
+  
   if (command == "LGHT")     //light control
     return setLightState(message[0], (message[1] == '1'));
   if (command == "MSG ")     //set message
     return signController.sendMessage(inputBuffer, &options);
   if (command == "MOSM")     //message option scroll mode
     return options.setScrollMode(message[0]);
-  if (command == "MOSR")     //message option scroll rate
-    return options.setScrollRate(0x58);            //TODO: convert from char[] (hex) to number
+  if (command == "MOSR")     //message option scroll rate  00 through FF
+    return options.setScrollRate(convertStringNumberToInt(message, 16));
   if (command == "MOSF")     //message option scroll freeze
-    return options.setScrollFreeze(message[0]);    //TODO: convert from char[] (up to three digits to dec)
+    return options.setScrollFreeze(convertStringNumberToInt(message, 10));    //TODO: convert from char[] (up to three digits to dec)
   if (command == "MOBM")     //message option morder mode
     return options.setBorderMode(message[0]);
     
   Serial.println("Error: Unknown command.");
 }
+
+int convertStringNumberToInt(String str, int base) {
+  char * pEnd;
+  return strtol(&(str[0]), &pEnd, base);
+}
+
 
 
 void clearBuffer() {
