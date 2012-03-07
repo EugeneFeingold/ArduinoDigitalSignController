@@ -160,8 +160,8 @@ void SignController::computeChecksum(byte command[], int commandLength, byte che
     sum &= 0xffff;       /* Keep it within bounds. */
   }
 
-  b[0] = (byte)((sum >> 8) & 0xff);
-  b[1] = (byte)(sum & 0xff);
+  checksum[0] = (byte)((sum >> 8) & 0xff);
+  checksum[1] = (byte)(sum & 0xff);
 }
 
 

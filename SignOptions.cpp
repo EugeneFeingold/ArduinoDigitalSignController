@@ -12,21 +12,25 @@ SignOptions::SignOptions() {
 
 
 void SignOptions::setScrollMode(int scrollMode) {  //see ScrollModes.ScrollModes enum
+  Serial.println("Setting scroll mode to " + String(scrollMode));
   if (scrollMode >= 0 && scrollMode <=0x0f)
     _scrollMode = scrollMode;
 }
 
 void SignOptions::setScrollRate(int scrollRate) {
+  Serial.println("Setting scroll rate to " + String(scrollRate, HEX));
   if (scrollRate >= 0 && scrollRate <= 0xff)
     _scrollRate = scrollRate;
 }
 
 void SignOptions::setScrollFreeze(int scrollFreeze) {
+  Serial.println("Setting scroll freeze to " + String(scrollFreeze));
   if (scrollFreeze >= 0 && scrollFreeze <= 0xff)
     _scrollFreeze = scrollFreeze;
 }
 
 void SignOptions::setBorderMode(int borderMode) {
+  Serial.println("Setting border mode to " + String(borderMode));
   if (borderMode >= 0 && borderMode <= 4)
     _borderMode = borderMode;
 }

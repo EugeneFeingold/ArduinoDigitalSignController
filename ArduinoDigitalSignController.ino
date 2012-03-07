@@ -1,13 +1,30 @@
 
+#include <SPI.h>
+#include <Ethernet.h>
 #include <SoftwareSerial.h>
 #include "SignController.h"
 #include "SignOptions.h"
 
+// Enter a MAC address and IP address for your controller below.
+// The IP address will be dependent on your local network.
+// gateway and subnet are optional:
+byte mac[] = { 0x90, 0xA2, 0xDA, 0x00, 0x88, 0x01 };
+/*
+IPAddress ip(10,1,1,181);
+IPAddress gateway(10,1,1, 1);
+*/
+IPAddress ip(192,168,168,190);
+IPAddress gateway(192,168,168,1);
+
+IPAddress subnet(255, 255, 255, 0);
+
+EthernetServer server(23);
 
 const int inputBufferSize = 200;
 
 char inputBuffer[inputBufferSize];
 int counter = 0;
+boolean receivingCommand = false;
 
 SignController signController = SignController(2, 3, true);
 SignOptions options = SignOptions();
@@ -15,6 +32,10 @@ SignOptions options = SignOptions();
 
 void setup() {
   Serial.begin(57600);
+  
+  Ethernet.begin(mac, ip, gateway, subnet);
+  // start listening for clients
+  server.begin();
 
   initLights();
   clearBuffer();
@@ -25,20 +46,39 @@ void setup() {
 
 
 void loop() {
-  byte b;
+  byte b = NULL;
+  
+  EthernetClient client = server.available();
 
   if (Serial.available() > 0) {
     b = Serial.read();
-
-    Serial.println(counter);
-    if (b == '`') {
-      inputBuffer[counter] = ' '; //terminator
-      processBuffer(counter);
+  }
+  
+  if (client) {
+    b = client.read();
+  }
+  
+  if (b != NULL) {
+    Serial.print(counter);
+    Serial.println(" " + String(b, HEX));
+    if (counter > 1 && b == ';' && inputBuffer[counter-1] == ';') {
+      if (!receivingCommand) {
+        receivingCommand = true;
+      } else {
+        receivingCommand = false;
+        counter--;
+        inputBuffer[counter] = ' '; //terminator
+        processBuffer(counter);
+      }
       clearBuffer();
       counter = 0;
     } 
     else {
       inputBuffer[counter++] = b;
+      if (counter > inputBufferSize) {
+        clearBuffer();
+        counter = 0;
+      }
     }
   }
 }
@@ -47,20 +87,24 @@ void loop() {
 
 void processBuffer(int len) {
   String command = String(inputBuffer).substring(0, 4);
-  String message = String(inputBuffer).substring(5, len - 5);
+  String message = String(inputBuffer).substring(4);
+  
+  Serial.println("Command: " + command);
+  Serial.println("Message: " + message);
+  
   
   if (command == "LGHT")     //light control
     return setLightState(message[0], (message[1] == '1'));
   if (command == "MSG ")     //set message
-    return signController.sendMessage(inputBuffer, &options);
+    return signController.sendMessage(message, &options);
   if (command == "MOSM")     //message option scroll mode
-    return options.setScrollMode(message[0]);
+    return options.setScrollMode(convertStringNumberToInt(message, 16));
   if (command == "MOSR")     //message option scroll rate  00 through FF
     return options.setScrollRate(convertStringNumberToInt(message, 16));
   if (command == "MOSF")     //message option scroll freeze
-    return options.setScrollFreeze(convertStringNumberToInt(message, 10));    //TODO: convert from char[] (up to three digits to dec)
+    return options.setScrollFreeze(convertStringNumberToInt(message, 10));   
   if (command == "MOBM")     //message option morder mode
-    return options.setBorderMode(message[0]);
+    return options.setBorderMode(convertStringNumberToInt(message, 10));
     
   Serial.println("Error: Unknown command.");
 }
