@@ -36,6 +36,10 @@ void setup() {
   initLights();
   clearBuffer();
 
+  options.setScrollMode(ScrollModes::STATIC);
+  signController.sendMessage("Hi Flite", &options);
+  delay(1000);
+  options.setScrollMode(ScrollModes::MOVE_TO_LEFT_LOOP);
   signController.sendMessage("", &options);
 }
 
