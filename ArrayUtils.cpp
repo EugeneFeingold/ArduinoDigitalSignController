@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "ArrayUtils.h"
 
+/*add comments for the explaination*/
+
 
 void ArrayUtils::concatArrays(byte input1[], int input1Length, byte input2[], int input2Length, byte output[]) {
   for (int i = 0; i < input1Length; i++)
